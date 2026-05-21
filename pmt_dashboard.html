@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MOLLER PMT Spectral Characterization</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.27.0/plotly.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;800&display=swap');
+
+  :root {
+    --bg:       #0d1117;
+    --surface:  #161b22;
+    --border:   #30363d;
+    --accent:   #58a6ff;
+    --accent2:  #f78166;
+    --text:     #e6edf3;
+    --muted:    #8b949e;
+    --navy:     #0C447C;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+  }
+
+  header {
+    padding: 24px 32px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  header .logo {
+    width: 36px; height: 36px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 800;
+    color: #000;
+    flex-shrink: 0;
+  }
+  header h1 { font-size: 1.15rem; font-weight: 800; letter-spacing: -0.02em; }
+  header p  { font-size: 0.72rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    min-height: calc(100vh - 73px);
+  }
+
+  /* SIDEBAR */
+  aside {
+    border-right: 1px solid var(--border);
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .section-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 8px;
+  }
+
+  .pmt-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .pmt-btn {
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .pmt-btn::before {
+    content: '';
+    position: absolute; left: 0; top: 0;
+    width: 3px; height: 100%;
+    background: transparent;
+    transition: background 0.15s;
+  }
+  .pmt-btn.active {
+    color: var(--text);
+    border-color: currentColor;
+  }
+  .pmt-btn.active::before { background: currentColor; }
+  .pmt-btn:hover { background: #1f2937; color: var(--text); }
+
+  .select-row {
+    display: flex; gap: 6px;
+  }
+  .select-row button {
+    flex: 1;
+    padding: 5px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 5px;
+    font-size: 0.65rem;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    transition: all 0.15s;
+  }
+  .select-row button:hover { color: var(--text); border-color: var(--accent); }
+
+  .control-group { display: flex; flex-direction: column; gap: 8px; }
+
+  .radio-group { display: flex; flex-direction: column; gap: 5px; }
+  .radio-group label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.78rem;
+    cursor: pointer;
+    padding: 5px 8px;
+    border-radius: 6px;
+    transition: background 0.1s;
+  }
+  .radio-group label:hover { background: var(--surface); }
+  .radio-group input { accent-color: var(--accent); cursor: pointer; }
+
+  .toggle-group { display: flex; flex-direction: column; gap: 5px; }
+  .toggle-group label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.78rem;
+    cursor: pointer;
+    padding: 5px 8px;
+    border-radius: 6px;
+    transition: background 0.1s;
+  }
+  .toggle-group label:hover { background: var(--surface); }
+  .toggle-group input { accent-color: var(--accent); cursor: pointer; }
+
+  /* MAIN */
+  main {
+    display: flex;
+    flex-direction: column;
+    padding: 24px;
+    gap: 24px;
+    overflow: auto;
+  }
+
+  .chart-tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0;
+  }
+  .tab-btn {
+    padding: 8px 20px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--muted);
+    font-family: 'Syne', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-bottom: -1px;
+  }
+  .tab-btn.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+  .tab-btn:hover { color: var(--text); }
+
+  .charts-container {
+    display: grid;
+    gap: 20px;
+  }
+  .charts-container.split { grid-template-columns: 1fr 1fr; }
+  .charts-container.single { grid-template-columns: 1fr; }
+
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .chart-card h3 {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .chart-wrapper {
+    position: relative;
+    height: 340px;
+  }
+  .chart-wrapper.tall { height: 460px; }
+  .plotly-wrapper { height: 460px; width: 100%; }
+
+  .heatmap-wrapper {
+    overflow-x: auto;
+  }
+  .heatmap-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+  }
+  .heatmap-table th {
+    padding: 6px 10px;
+    background: var(--bg);
+    color: var(--muted);
+    text-align: center;
+    border: 1px solid var(--border);
+    white-space: nowrap;
+    font-weight: 600;
+  }
+  .heatmap-table td {
+    padding: 5px 8px;
+    text-align: center;
+    border: 1px solid #1f2937;
+    font-size: 0.65rem;
+    font-weight: 600;
+    transition: opacity 0.2s;
+    cursor: default;
+    position: relative;
+  }
+  .heatmap-table td:hover { opacity: 0.85; outline: 1px solid rgba(255,255,255,0.3); }
+
+  .stats-bar {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .stat-chip {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+  }
+  .stat-chip span { color: var(--accent); font-weight: 600; }
+
+  .legend-bar {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .heatmap-scale {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    margin-top: 8px;
+  }
+  .scale-bar {
+    height: 10px;
+    width: 160px;
+    border-radius: 3px;
+    background: linear-gradient(to right, #0d1117, #58a6ff);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>MOLLER PMT Spectral Characterization</h1>
+    <p>Photodiode Method · 11 PMTs · 230–510 nm</p>
+  </div>
+</header>
+
+<div class="layout">
+  <aside>
+    <div>
+      <div class="section-label">PMT Selection</div>
+      <div class="select-row" style="margin-bottom:8px">
+        <button onclick="selectAll()">All</button>
+        <button onclick="selectNone()">None</button>
+      </div>
+      <div class="pmt-grid" id="pmtGrid"></div>
+    </div>
+
+    <div>
+      <div class="section-label">Y Axis</div>
+      <div class="radio-group" id="yAxisGroup">
+        <label><input type="radio" name="yaxis" value="S_mean" checked> S(C) Mean</label>
+        <label><input type="radio" name="yaxis" value="Ic_mean"> I_cathode (nA)</label>
+        <label><input type="radio" name="yaxis" value="P_mean"> P_PD (nW)</label>
+        <label><input type="radio" name="yaxis" value="dS_full"> δS Full</label>
+        <label><input type="radio" name="yaxis" value="S_stat"> S(C) Stat Unc</label>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">Error Bars</div>
+      <div class="toggle-group">
+        <label><input type="checkbox" id="errY" checked> Vertical (δS Full)</label>
+        <label><input type="checkbox" id="errX" checked> Horizontal (δλ)</label>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="chart-tabs">
+      <button class="tab-btn active" onclick="setView('line')">Line Plot</button>
+      <button class="tab-btn" onclick="setView('heatmap')">Heatmap</button>
+    </div>
+
+    <div id="statsBar" class="stats-bar"></div>
+
+    <div id="chartsContainer" class="charts-container single">
+      <!-- dynamically filled -->
+    </div>
+  </main>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────
+const RAW = {"F23-586": [{"wv": 230, "S_mean": 1.877990372532055e-20, "S_stat": 2.772746284993352e-22, "dS_full": 3.9429366845171355e-22, "Ic_mean": 1.6769e-10, "Ic_std": 2.5e-12, "P_mean": 7.7592, "P_std": 0.114702659079901, "dlam": 0.03104}, {"wv": 250, "S_mean": 2.473461766289714e-20, "S_stat": 2.203998813376099e-22, "dS_full": 2.469471920304653e-22, "Ic_mean": 4.621899999999999e-10, "Ic_std": 3.8e-12, "P_mean": 14.856, "P_std": 0.08414273587185102, "dlam": 0.00871}, {"wv": 270, "S_mean": 2.83392574166206e-20, "S_stat": 2.054236710084441e-22, "dS_full": 9.492162184877956e-23, "Ic_mean": 1.08079e-09, "Ic_std": 8e-13, "P_mean": 28.14, "P_std": 0.09192388155425116, "dlam": 0.0003}, {"wv": 290, "S_mean": 3.164341600648675e-20, "S_stat": 1.297581239177527e-22, "dS_full": 7.342826504912557e-23, "Ic_mean": 1.93479e-09, "Ic_std": 7e-13, "P_mean": 41.96, "P_std": 0.09617692030835827, "dlam": 0.00115}, {"wv": 310, "S_mean": 3.564477069777534e-20, "S_stat": 9.002912465435665e-23, "dS_full": 4.768503262277455e-23, "Ic_mean": 2.96179e-09, "Ic_std": 7e-13, "P_mean": 53.324, "P_std": 0.07021395872616804, "dlam": 0.0}, {"wv": 330, "S_mean": 3.653544764414331e-20, "S_stat": 9.893628132298567e-23, "dS_full": 4.612446053515208e-23, "Ic_mean": 3.884790000000001e-09, "Ic_std": 8e-13, "P_mean": 64.07799999999999, "P_std": 0.07981227975693687, "dlam": 0.0}, {"wv": 350, "S_mean": 3.653537753560545e-20, "S_stat": 8.82649272815895e-23, "dS_full": 7.166009184495684e-23, "Ic_mean": 4.904790000000001e-09, "Ic_std": 1.1e-12, "P_mean": 76.346, "P_std": 0.1487615541731083, "dlam": 0.00184}, {"wv": 370, "S_mean": 3.559088819130746e-20, "S_stat": 6.07578329486548e-23, "dS_full": 3.6152080185293395e-23, "Ic_mean": 5.842790000000001e-09, "Ic_std": 9e-13, "P_mean": 88.25, "P_std": 0.08860022573334517, "dlam": 0.00378}, {"wv": 390, "S_mean": 3.49392534077825e-20, "S_stat": 8.823226753881166e-23, "dS_full": 4.9325804271528915e-23, "Ic_mean": 6.21879e-09, "Ic_std": 1.2e-12, "P_mean": 90.814, "P_std": 0.12700393694685042, "dlam": 0.00117}, {"wv": 410, "S_mean": 3.320650254037013e-20, "S_stat": 6.884646124646576e-23, "dS_full": 3.369030104965077e-23, "Ic_mean": 6.20079e-09, "Ic_std": 1.2e-12, "P_mean": 90.65, "P_std": 0.09027735042633435, "dlam": 0.00419}, {"wv": 430, "S_mean": 3.076873705613539e-20, "S_stat": 7.000996993518443e-23, "dS_full": 3.199366097041347e-23, "Ic_mean": 5.572790000000001e-09, "Ic_std": 1e-12, "P_mean": 83.822, "P_std": 0.08584870412533974, "dlam": 0.00345}, {"wv": 450, "S_mean": 2.774285467337803e-20, "S_stat": 4.817273530025712e-23, "dS_full": 2.144805890663784e-23, "Ic_mean": 5.66879e-09, "Ic_std": 9e-13, "P_mean": 90.416, "P_std": 0.06841052550594817, "dlam": 0.00123}, {"wv": 470, "S_mean": 2.39135195035461e-20, "S_stat": 3.931526084976428e-23, "dS_full": 1.9084574325484828e-23, "Ic_mean": 6.028790000000001e-09, "Ic_std": 9e-13, "P_mean": 106.72, "P_std": 0.0836660026534079, "dlam": 0.00101}], "F23-619": [{"wv": 230, "S_mean": 1.839378700108218e-20, "S_stat": 4.030694622075359e-22, "dS_full": 4.227288424506704e-22, "Ic_mean": 1.5972e-10, "Ic_std": 3.5e-12, "P_mean": 7.5232, "P_std": 0.052112378567860246, "dlam": 0.01207}, {"wv": 250, "S_mean": 2.437251946607341e-20, "S_stat": 2.32424916573971e-22, "dS_full": 2.7213183722735694e-22, "Ic_mean": 4.4042e-10, "Ic_std": 4.2e-12, "P_mean": 14.386, "P_std": 0.08354639429682179, "dlam": 0.00058}, {"wv": 270, "S_mean": 2.776563667806856e-20, "S_stat": 1.357042710703044e-23, "dS_full": 6.748288921350068e-23, "Ic_mean": 1.02302e-09, "Ic_std": 5e-13, "P_mean": 27.156, "P_std": 0.06465291950097941, "dlam": 0.0}, {"wv": 290, "S_mean": 3.124698771597468e-20, "S_stat": 1.185509718115916e-23, "dS_full": 5.876440656435233e-23, "Ic_mean": 1.84502e-09, "Ic_std": 7e-13, "P_mean": 40.51800000000001, "P_std": 0.07463243262818092, "dlam": 0.00232}, {"wv": 310, "S_mean": 3.558278807854683e-20, "S_stat": 1.249825715258299e-23, "dS_full": 7.558592210890197e-23, "Ic_mean": 2.84702e-09, "Ic_std": 1e-12, "P_mean": 51.36600000000001, "P_std": 0.10761040841851591, "dlam": 0.00228}, {"wv": 330, "S_mean": 3.647775153286683e-20, "S_stat": 7.834105917899359e-24, "dS_full": 4.5015867482962506e-23, "Ic_mean": 3.72502e-09, "Ic_std": 8e-13, "P_mean": 61.58000000000001, "P_std": 0.07483314773547865, "dlam": 0.00192}, {"wv": 350, "S_mean": 3.662478683093167e-20, "S_stat": 7.702341279517578e-24, "dS_full": 3.6024663054804133e-23, "Ic_mean": 4.75502e-09, "Ic_std": 1e-12, "P_mean": 73.81800000000001, "P_std": 0.07014271166700552, "dlam": 0.04995}, {"wv": 370, "S_mean": 3.587665567810533e-20, "S_stat": 7.594255588042799e-24, "dS_full": 4.094028049200043e-23, "Ic_mean": 5.66902e-09, "Ic_std": 1.2e-12, "P_mean": 84.98599999999999, "P_std": 0.09528903399657275, "dlam": 0.00563}, {"wv": 390, "S_mean": 3.54994107465753e-20, "S_stat": 8.750853098241739e-24, "dS_full": 2.5331394946819225e-23, "Ic_mean": 6.08502e-09, "Ic_std": 1.5e-12, "P_mean": 87.464, "P_std": 0.058566201857386264, "dlam": 0.00278}, {"wv": 410, "S_mean": 3.386041320879274e-20, "S_stat": 6.601521335519834e-24, "dS_full": 2.0546043499657465e-23, "Ic_mean": 6.15502e-09, "Ic_std": 1.2e-12, "P_mean": 88.22800000000001, "P_std": 0.050695167422544624, "dlam": 0.00195}, {"wv": 430, "S_mean": 3.120095494860627e-20, "S_stat": 6.250396182033009e-24, "dS_full": 2.6391958191122524e-23, "Ic_mean": 5.49102e-09, "Ic_std": 1.1e-12, "P_mean": 81.446, "P_std": 0.06693280212272419, "dlam": 0.00032}, {"wv": 450, "S_mean": 2.807762215855981e-20, "S_stat": 4.524578236551316e-24, "dS_full": 7.354855126538542e-24, "Ic_mean": 5.58502e-09, "Ic_std": 9e-13, "P_mean": 87.96399999999998, "P_std": 0.01816590212458447, "dlam": 0.0}, {"wv": 470, "S_mean": 2.412081891843626e-20, "S_stat": 4.132385861010628e-24, "dS_full": 2.6113045448488415e-23, "Ic_mean": 5.83702e-09, "Ic_std": 1e-12, "P_mean": 102.48, "P_std": 0.10954451150102701, "dlam": 0.00279}, {"wv": 490, "S_mean": 1.987711366312984e-20, "S_stat": 3.851066300267059e-24, "dS_full": 2.862914132194552e-23, "Ic_mean": 3.61302e-09, "Ic_std": 7e-13, "P_mean": 73.82, "P_std": 0.1053565375285297, "dlam": 0.00233}, {"wv": 510, "S_mean": 1.674193123183864e-20, "S_stat": 3.278848428887874e-24, "dS_full": 1.479653255619385e-23, "Ic_mean": 2.55302e-09, "Ic_std": 5e-13, "P_mean": 59.50599999999999, "P_std": 0.05128352561983128, "dlam": 0.0018}], "B24-1117": [{"wv": 230, "S_mean": 2.011208521717523e-20, "S_stat": 3.224813236318851e-22, "dS_full": 3.226263032048796e-22, "Ic_mean": 1.871e-10, "Ic_std": 3e-12, "P_mean": 8.0486, "P_std": 0.0038470768123340304, "dlam": 0.01207}, {"wv": 250, "S_mean": 2.520397565922921e-20, "S_stat": 2.691007437457742e-22, "dS_full": 2.8056848184431984e-22, "Ic_mean": 4.683e-10, "Ic_std": 5e-12, "P_mean": 14.788, "P_std": 0.04658325879540825, "dlam": 0.00058}, {"wv": 270, "S_mean": 2.793227828672063e-20, "S_stat": 1.607613138804065e-23, "dS_full": 5.29643582221485e-23, "Ic_mean": 1.0425e-09, "Ic_std": 6e-13, "P_mean": 27.508, "P_std": 0.0496990945591564, "dlam": 0.0}, {"wv": 290, "S_mean": 3.125337176437856e-20, "S_stat": 8.440013979038228e-24, "dS_full": 4.410158095393553e-23, "Ic_mean": 1.8515e-09, "Ic_std": 5e-13, "P_mean": 40.652, "P_std": 0.05630275304103834, "dlam": 0.00232}, {"wv": 310, "S_mean": 3.561071681640603e-20, "S_stat": 6.283874504394922e-24, "dS_full": 3.4868769954005423e-23, "Ic_mean": 2.8335e-09, "Ic_std": 5e-13, "P_mean": 51.078, "P_std": 0.04919349550499469, "dlam": 0.00228}, {"wv": 330, "S_mean": 3.707977233366901e-20, "S_stat": 4.926235197777204e-24, "dS_full": 3.260325604299325e-23, "Ic_mean": 3.7635e-09, "Ic_std": 5e-13, "P_mean": 61.206, "P_std": 0.053197744313082725, "dlam": 0.00192}, {"wv": 350, "S_mean": 3.772973578762343e-20, "S_stat": 4.695186450808681e-24, "dS_full": 2.4305443245155805e-23, "Ic_mean": 4.8215e-09, "Ic_std": 6e-13, "P_mean": 72.63, "P_std": 0.04472135954999722, "dlam": 0.04995}, {"wv": 370, "S_mean": 3.751160753651009e-20, "S_stat": 5.823276719768708e-24, "dS_full": 2.1264872767940905e-22, "Ic_mean": 5.7975e-09, "Ic_std": 9e-13, "P_mean": 83.124, "P_std": 0.47104139945443974, "dlam": 0.00563}, {"wv": 390, "S_mean": 3.749930671723903e-20, "S_stat": 4.747123249274663e-24, "dS_full": 4.288083464668087e-23, "Ic_mean": 6.3195e-09, "Ic_std": 8e-13, "P_mean": 85.98999999999998, "P_std": 0.0977241014284605, "dlam": 0.00278}, {"wv": 410, "S_mean": 3.666263670716838e-20, "S_stat": 5.221358182839077e-24, "dS_full": 2.483655998843295e-23, "Ic_mean": 6.3195e-09, "Ic_std": 9e-13, "P_mean": 83.662, "P_std": 0.05540758070878157, "dlam": 0.00195}, {"wv": 430, "S_mean": 3.431251113113806e-20, "S_stat": 4.148675670057284e-24, "dS_full": 3.409153681710621e-23, "Ic_mean": 5.7895e-09, "Ic_std": 7e-13, "P_mean": 78.086, "P_std": 0.07700649323271308, "dlam": 0.00032}, {"wv": 450, "S_mean": 3.143457897599546e-20, "S_stat": 4.265569193587714e-24, "dS_full": 3.255556230124985e-23, "Ic_mean": 5.8955e-09, "Ic_std": 8e-13, "P_mean": 82.93, "P_std": 0.08514693182963008, "dlam": 0.0}, {"wv": 470, "S_mean": 2.720346493395638e-20, "S_stat": 3.845012711513269e-24, "dS_full": 1.6184512694610184e-23, "Ic_mean": 6.3675e-09, "Ic_std": 9e-13, "P_mean": 99.106, "P_std": 0.05727128425310767, "dlam": 0.00279}, {"wv": 490, "S_mean": 2.35072170771865e-20, "S_stat": 5.842479701052938e-24, "dS_full": 3.9820567106366047e-23, "Ic_mean": 4.0235e-09, "Ic_std": 1e-12, "P_mean": 69.39200000000001, "P_std": 0.1162755348299924, "dlam": 0.00233}, {"wv": 510, "S_mean": 2.07877951976908e-20, "S_stat": 4.087392141115673e-24, "dS_full": 8.685792984935213e-23, "Ic_mean": 3.0515e-09, "Ic_std": 6e-13, "P_mean": 57.238, "P_std": 0.2388932816133589, "dlam": 0.0018}], "B24-1155": [{"wv": 230, "S_mean": 2.210563554675063e-20, "S_stat": 3.520005660310609e-22, "dS_full": 2.9990114212822006e-21, "Ic_mean": 1.884e-10, "Ic_std": 3e-12, "P_mean": 6.973999999999999, "P_std": 0.939600713069121, "dlam": 0.08012}, {"wv": 250, "S_mean": 2.719761024182077e-20, "S_stat": 2.830725462304409e-22, "dS_full": 3.0782712020757642e-22, "Ic_mean": 4.804e-10, "Ic_std": 5e-12, "P_mean": 14.06, "P_std": 0.06244997998398415, "dlam": 0.05368}, {"wv": 270, "S_mean": 3.023157571442532e-20, "S_stat": 1.666876073208527e-23, "dS_full": 1.101016520921888e-22, "Ic_mean": 1.0882e-09, "Ic_std": 6e-13, "P_mean": 26.52999999999999, "P_std": 0.09539392014169432, "dlam": 0.04729}, {"wv": 290, "S_mean": 3.36808449452302e-20, "S_stat": 8.670797277631086e-24, "dS_full": 1.0856212866621037e-22, "Ic_mean": 1.9422e-09, "Ic_std": 5e-13, "P_mean": 39.57, "P_std": 0.12688577540449592, "dlam": 0.05854}, {"wv": 310, "S_mean": 3.789578183314829e-20, "S_stat": 7.583706590584009e-24, "dS_full": 9.216146300144897e-23, "Ic_mean": 2.9982e-09, "Ic_std": 6e-13, "P_mean": 50.788, "P_std": 0.1227599283153903, "dlam": 0.05549}, {"wv": 330, "S_mean": 3.915026543927783e-20, "S_stat": 4.957989139263188e-24, "dS_full": 4.165267215482069e-23, "Ic_mean": 3.948199999999999e-09, "Ic_std": 5e-13, "P_mean": 60.814, "P_std": 0.06387487769068671, "dlam": 0.03717}, {"wv": 350, "S_mean": 3.945580805113623e-20, "S_stat": 4.676521044344699e-24, "dS_full": 5.472991710697394e-23, "Ic_mean": 5.062199999999999e-09, "Ic_std": 6e-13, "P_mean": 72.94800000000001, "P_std": 0.100349389634415, "dlam": 0.04656}, {"wv": 370, "S_mean": 3.855559792192937e-20, "S_stat": 5.767766718150399e-24, "dS_full": 6.140885186955681e-23, "Ic_mean": 6.0162e-09, "Ic_std": 9e-13, "P_mean": 83.95, "P_std": 0.1330413469564961, "dlam": 0.02004}, {"wv": 390, "S_mean": 3.797544534817806e-20, "S_stat": 5.298735049046582e-24, "dS_full": 5.381183740180708e-23, "Ic_mean": 6.4502e-09, "Ic_std": 9e-13, "P_mean": 86.672, "P_std": 0.1221474518768209, "dlam": 0.01879}, {"wv": 410, "S_mean": 3.639601573810393e-20, "S_stat": 5.585466335917243e-24, "dS_full": 3.5337634331834984e-23, "Ic_mean": 6.516199999999999e-09, "Ic_std": 1e-12, "P_mean": 86.93, "P_std": 0.08276472678623838, "dlam": 0.04615}, {"wv": 430, "S_mean": 3.413739079220882e-20, "S_stat": 4.605226237524378e-24, "dS_full": 2.3855708502278486e-23, "Ic_mean": 5.930199999999999e-09, "Ic_std": 8e-13, "P_mean": 80.394, "P_std": 0.05504543577809285, "dlam": 0.01571}, {"wv": 450, "S_mean": 3.091438565536028e-20, "S_stat": 4.106723211498826e-24, "dS_full": 1.9292635754091538e-23, "Ic_mean": 6.022199999999999e-09, "Ic_std": 8e-13, "P_mean": 86.14599999999999, "P_std": 0.0522494019104556, "dlam": 0.02826}, {"wv": 470, "S_mean": 2.682286486645809e-20, "S_stat": 3.77066920430669e-24, "dS_full": 1.515547517380639e-23, "Ic_mean": 6.402199999999999e-09, "Ic_std": 9e-13, "P_mean": 101.06, "P_std": 0.05477225575051349, "dlam": 0.03563}, {"wv": 490, "S_mean": 2.360771160970679e-20, "S_stat": 4.592716620729884e-24, "dS_full": 3.570636487757701e-23, "Ic_mean": 4.1122e-09, "Ic_std": 8e-13, "P_mean": 70.74199999999999, "P_std": 0.1056882207249233, "dlam": 0.06528}, {"wv": 510, "S_mean": 2.017350292559439e-20, "S_stat": 3.348632714559855e-24, "dS_full": 1.3676292732555e-23, "Ic_mean": 3.0122e-09, "Ic_std": 5e-13, "P_mean": 58.262, "P_std": 0.03768288736283198, "dlam": 0.05972}], "E24-1227": [{"wv": 230, "S_mean": 1.959243539994708e-20, "S_stat": 4.387512126289796e-22, "dS_full": 4.417606180790094e-22, "Ic_mean": 1.7862e-10, "Ic_std": 4e-12, "P_mean": 7.887600000000001, "P_std": 0.02058640327983496, "dlam": 0.06941}, {"wv": 250, "S_mean": 2.544376684080286e-20, "S_stat": 2.735771240032994e-22, "dS_full": 2.776191835565256e-22, "Ic_mean": 4.6502e-10, "Ic_std": 5e-12, "P_mean": 14.548, "P_std": 0.02683281572999767, "dlam": 0.04972}, {"wv": 270, "S_mean": 2.811410312058945e-20, "S_stat": 1.629771586283711e-23, "dS_full": 6.637235393580688e-23, "Ic_mean": 1.03502e-09, "Ic_std": 6e-13, "P_mean": 27.134, "P_std": 0.06188699378706384, "dlam": 0.05081}, {"wv": 290, "S_mean": 3.129578440881295e-20, "S_stat": 8.555342316872683e-24, "dS_full": 7.207646614750938e-23, "Ic_mean": 1.82902e-09, "Ic_std": 5e-13, "P_mean": 40.104, "P_std": 0.09126883367283925, "dlam": 0.06493}, {"wv": 310, "S_mean": 3.492967636958054e-20, "S_stat": 6.217413256149927e-24, "dS_full": 5.451801796174783e-23, "Ic_mean": 2.80902e-09, "Ic_std": 5e-13, "P_mean": 51.62800000000001, "P_std": 0.07949842765740493, "dlam": 0.05658}, {"wv": 330, "S_mean": 3.663543455949873e-20, "S_stat": 4.886001482987385e-24, "dS_full": 5.284464706595875e-23, "Ic_mean": 3.74902e-09, "Ic_std": 5e-13, "P_mean": 61.71, "P_std": 0.0883176086632796, "dlam": 0.03989}, {"wv": 350, "S_mean": 3.726766675741901e-20, "S_stat": 4.643926723970286e-24, "dS_full": 5.617250115318256e-23, "Ic_mean": 4.81502e-09, "Ic_std": 6e-13, "P_mean": 73.46000000000001, "P_std": 0.1100000000000027, "dlam": 0.04155}, {"wv": 370, "S_mean": 3.680769487944154e-20, "S_stat": 5.069040200163407e-24, "dS_full": 1.7251083269258877e-23, "Ic_mean": 5.80902e-09, "Ic_std": 8e-13, "P_mean": 84.882, "P_std": 0.037682887362831895, "dlam": 0.02223}, {"wv": 390, "S_mean": 3.643122911286093e-20, "S_stat": 4.649049339496245e-24, "dS_full": 5.350612540823035e-23, "Ic_mean": 6.26902e-09, "Ic_std": 8e-13, "P_mean": 87.804, "P_std": 0.1283744522870495, "dlam": 0.02189}, {"wv": 410, "S_mean": 3.494658426222272e-20, "S_stat": 4.966339256152743e-24, "dS_full": 4.645857642977386e-23, "Ic_mean": 6.33302e-09, "Ic_std": 9e-13, "P_mean": 87.96000000000001, "P_std": 0.1157583690279007, "dlam": 0.05056}, {"wv": 430, "S_mean": 3.263373995204786e-20, "S_stat": 3.984569732258653e-24, "dS_full": 1.7834316115819447e-23, "Ic_mean": 5.73302e-09, "Ic_std": 7e-13, "P_mean": 81.30199999999999, "P_std": 0.04324349662088073, "dlam": 0.01253}, {"wv": 450, "S_mean": 2.949537546310031e-20, "S_stat": 4.036992237918819e-24, "dS_full": 3.026757606406011e-23, "Ic_mean": 5.84502e-09, "Ic_std": 8e-13, "P_mean": 87.634, "P_std": 0.0890505474435729, "dlam": 0.01868}, {"wv": 470, "S_mean": 2.572032346063913e-20, "S_stat": 3.300111109268503e-24, "dS_full": 1.4279721614820338e-23, "Ic_mean": 6.23502e-09, "Ic_std": 8e-13, "P_mean": 102.64, "P_std": 0.05477225575052128, "dlam": 0.03935}, {"wv": 490, "S_mean": 2.168582425316142e-20, "S_stat": 3.956215234013113e-24, "dS_full": 2.034697664136779e-23, "Ic_mean": 3.83702e-09, "Ic_std": 7e-13, "P_mean": 71.85799999999999, "P_std": 0.06534523701081843, "dlam": 0.06948}, {"wv": 510, "S_mean": 1.8465574244934e-20, "S_stat": 3.317542497886109e-24, "dS_full": 1.4355929878246068e-23, "Ic_mean": 2.78302e-09, "Ic_std": 5e-13, "P_mean": 58.80800000000001, "P_std": 0.04381780460041252, "dlam": 0.06643}], "G24-1121": [{"wv": 230, "S_mean": 1.899531830505071e-20, "S_stat": 4.995481474043578e-22, "dS_full": 5.335752860715537e-22, "Ic_mean": 1.521e-10, "Ic_std": 4e-12, "P_mean": 6.9278, "P_std": 0.06833154469203802, "dlam": 0.08662}, {"wv": 250, "S_mean": 2.62992635777846e-20, "S_stat": 3.053083768027002e-22, "dS_full": 9.18205138768761e-22, "Ic_mean": 4.307e-10, "Ic_std": 5e-12, "P_mean": 13.036, "P_std": 0.42922022319550623, "dlam": 0.07626}, {"wv": 270, "S_mean": 3.036201757138375e-20, "S_stat": 1.734476867831119e-23, "dS_full": 7.051460777629903e-23, "Ic_mean": 1.0503e-09, "Ic_std": 6e-13, "P_mean": 25.496, "P_std": 0.057271284253105896, "dlam": 0.03976}, {"wv": 290, "S_mean": 3.47674617377601e-20, "S_stat": 1.063062581799728e-23, "dS_full": 9.493718443471614e-23, "Ic_mean": 1.9623e-09, "Ic_std": 6e-13, "P_mean": 38.73, "P_std": 0.1048808848170153, "dlam": 0.04989}, {"wv": 310, "S_mean": 3.982071515162611e-20, "S_stat": 7.807217949539478e-24, "dS_full": 4.444530114332792e-23, "Ic_mean": 3.0603e-09, "Ic_std": 6e-13, "P_mean": 49.334, "P_std": 0.05366563145999342, "dlam": 0.04803}, {"wv": 330, "S_mean": 4.094164133489976e-20, "S_stat": 6.104163407534193e-24, "dS_full": 4.279404214435035e-23, "Ic_mean": 4.0243e-09, "Ic_std": 6e-13, "P_mean": 59.274, "P_std": 0.061073725938410366, "dlam": 0.03071}, {"wv": 350, "S_mean": 4.0900799512987e-20, "S_stat": 5.65340909090909e-24, "dS_full": 3.987011383113594e-23, "Ic_mean": 5.0643e-09, "Ic_std": 7e-13, "P_mean": 70.4, "P_std": 0.06745368781616207, "dlam": 0.04003}, {"wv": 370, "S_mean": 3.876880034882212e-20, "S_stat": 9.981154510278082e-24, "dS_full": 4.578481347575993e-23, "Ic_mean": 5.8263e-09, "Ic_std": 1.5e-12, "P_mean": 80.828, "P_std": 0.09257429448826286, "dlam": 0.04773}, {"wv": 390, "S_mean": 3.591418718905586e-20, "S_stat": 3.032114819331667e-23, "dS_full": 3.7625476897980153e-23, "Ic_mean": 5.9223e-09, "Ic_std": 5e-12, "P_mean": 84.144, "P_std": 0.051283525619835305, "dlam": 0.04502}, {"wv": 410, "S_mean": 3.43104464299463e-20, "S_stat": 2.946468442878785e-23, "dS_full": 4.1658928840779537e-23, "Ic_mean": 5.8223e-09, "Ic_std": 5e-12, "P_mean": 82.364, "P_std": 0.07021395872616672, "dlam": 0.04103}, {"wv": 430, "S_mean": 3.302911291870303e-20, "S_stat": 1.801489714308475e-23, "dS_full": 1.924774634642759e-23, "Ic_mean": 5.5003e-09, "Ic_std": 3e-12, "P_mean": 77.068, "P_std": 0.01303840481040488, "dlam": 0.04994}, {"wv": 450, "S_mean": 2.90939048862455e-20, "S_stat": 2.672942036110238e-23, "dS_full": 4.1332487194202096e-23, "Ic_mean": 5.4423e-09, "Ic_std": 5e-12, "P_mean": 82.72200000000001, "P_std": 0.089274856482662, "dlam": 0.04386}, {"wv": 470, "S_mean": 2.439500875298817e-20, "S_stat": 1.749279081654853e-23, "dS_full": 2.7811533475366576e-23, "Ic_mean": 5.5783e-09, "Ic_std": 4e-12, "P_mean": 96.81800000000001, "P_std": 0.08555699854483266, "dlam": 0.03197}, {"wv": 490, "S_mean": 2.231827013594791e-20, "S_stat": 3.668455217809151e-24, "dS_full": 2.0338635644136876e-23, "Ic_mean": 3.6503e-09, "Ic_std": 6e-13, "P_mean": 66.424, "P_std": 0.05813776741499213, "dlam": 0.09474}, {"wv": 510, "S_mean": 1.912853444590688e-20, "S_stat": 3.497885097814225e-24, "dS_full": 1.5072601986454314e-23, "Ic_mean": 2.7343e-09, "Ic_std": 5e-13, "P_mean": 55.776, "P_std": 0.04219004621945994, "dlam": 0.06304}], "G24-1199": [{"wv": 230, "S_mean": 2.132861476238625e-20, "S_stat": 5.918039612204841e-22, "dS_full": 6.184645290342923e-22, "Ic_mean": 1.802e-10, "Ic_std": 5e-12, "P_mean": 7.321, "P_std": 0.06159545437773775, "dlam": 0.08662}, {"wv": 250, "S_mean": 2.741576309794989e-20, "S_stat": 3.022019741837509e-22, "dS_full": 3.142654248880701e-22, "Ic_mean": 4.536e-10, "Ic_std": 5e-12, "P_mean": 13.17, "P_std": 0.041231056256176915, "dlam": 0.07626}, {"wv": 270, "S_mean": 3.108392177080552e-20, "S_stat": 1.832058257611327e-23, "dS_full": 4.792529463916601e-23, "Ic_mean": 1.018e-09, "Ic_std": 6e-13, "P_mean": 24.138, "P_std": 0.034205262752974044, "dlam": 0.03976}, {"wv": 290, "S_mean": 3.5018968575098e-20, "S_stat": 9.814733345038676e-24, "dS_full": 4.368984504006129e-23, "Ic_mean": 1.784e-09, "Ic_std": 5e-13, "P_mean": 34.958, "P_std": 0.04207136793592609, "dlam": 0.04989}, {"wv": 310, "S_mean": 3.943860112367792e-20, "S_stat": 7.298038697941879e-24, "dS_full": 5.405029956985592e-23, "Ic_mean": 2.702e-09, "Ic_std": 5e-13, "P_mean": 43.978, "P_std": 0.0593295878967662, "dlam": 0.04803}, {"wv": 330, "S_mean": 4.09543046610008e-20, "S_stat": 6.894664084343567e-24, "dS_full": 4.463981531876424e-23, "Ic_mean": 3.564e-09, "Ic_std": 6e-13, "P_mean": 52.47799999999999, "P_std": 0.05630275304103639, "dlam": 0.03071}, {"wv": 350, "S_mean": 4.12881191649674e-20, "S_stat": 6.368815208346668e-24, "dS_full": 8.894378675144894e-22, "Ic_mean": 4.538e-09, "Ic_std": 7e-13, "P_mean": 63.09200000000001, "P_std": 1.359087929458575, "dlam": 0.04003}, {"wv": 370, "S_mean": 4.014877469701359e-20, "S_stat": 6.738884227398775e-24, "dS_full": 6.206824168870515e-23, "Ic_mean": 5.361999999999999e-09, "Ic_std": 9e-13, "P_mean": 71.83, "P_std": 0.1099999999999991, "dlam": 0.04773}, {"wv": 390, "S_mean": 3.94698957707589e-20, "S_stat": 6.990771479057546e-24, "dS_full": 3.029264993230077e-23, "Ic_mean": 5.646e-09, "Ic_std": 1e-12, "P_mean": 72.99, "P_std": 0.053851648071345536, "dlam": 0.04502}, {"wv": 410, "S_mean": 3.743970962157933e-20, "S_stat": 6.61946775487612e-24, "dS_full": 3.1276080107602105e-23, "Ic_mean": 5.655999999999999e-09, "Ic_std": 1e-12, "P_mean": 73.324, "P_std": 0.059413803110053, "dlam": 0.04103}, {"wv": 430, "S_mean": 3.45719868863833e-20, "S_stat": 5.478920267255674e-24, "dS_full": 6.540767002780084e-23, "Ic_mean": 5.048e-09, "Ic_std": 8e-13, "P_mean": 67.578, "P_std": 0.1271613148720924, "dlam": 0.04994}, {"wv": 450, "S_mean": 3.103762444089554e-20, "S_stat": 5.479376617655157e-24, "dS_full": 3.416973981493958e-23, "Ic_mean": 5.098e-09, "Ic_std": 9e-13, "P_mean": 72.63600000000001, "P_std": 0.07861297602813526, "dlam": 0.04386}, {"wv": 470, "S_mean": 2.672578949814344e-20, "S_stat": 5.195526729810157e-24, "dS_full": 1.521335533918679e-23, "Ic_mean": 5.144e-09, "Ic_std": 1e-12, "P_mean": 81.48799999999999, "P_std": 0.043243496620877925, "dlam": 0.03197}, {"wv": 490, "S_mean": 2.337729652708336e-20, "S_stat": 4.646254278523099e-24, "dS_full": 5.2689341640977795e-23, "Ic_mean": 3.522e-09, "Ic_std": 7e-13, "P_mean": 61.186, "P_std": 0.1368575902169843, "dlam": 0.09474}, {"wv": 510, "S_mean": 2.033143654915893e-20, "S_stat": 3.609985182734185e-24, "dS_full": 1.1825605358210265e-21, "Ic_mean": 2.816e-09, "Ic_std": 5e-13, "P_mean": 54.468, "P_std": 3.168062499383497, "dlam": 0.06304}], "A24-1108": [{"wv": 230, "S_mean": 1.71762039800379e-20, "S_stat": 6.160761829281883e-22, "dS_full": 6.958572080065992e-22, "Ic_mean": 1.394e-10, "Ic_std": 5e-12, "P_mean": 7.022, "P_std": 0.1322062782170349, "dlam": 0.12719}, {"wv": 250, "S_mean": 2.293337322363501e-20, "S_stat": 3.572176514584891e-22, "dS_full": 3.635642569596242e-22, "Ic_mean": 3.852e-10, "Ic_std": 6e-12, "P_mean": 13.37, "P_std": 0.03872983346207426, "dlam": 0.13841}, {"wv": 270, "S_mean": 2.631869542886492e-20, "S_stat": 1.987388004337157e-23, "dS_full": 7.792589145327895e-23, "Ic_mean": 9.27e-10, "Ic_std": 7e-13, "P_mean": 25.96, "P_std": 0.07348469228349523, "dlam": 0.11571}, {"wv": 290, "S_mean": 2.99545872027758e-20, "S_stat": 8.753532204200991e-24, "dS_full": 4.3320153178792805e-23, "Ic_mean": 1.711e-09, "Ic_std": 5e-13, "P_mean": 39.196, "P_std": 0.053197744313081594, "dlam": 0.11745}, {"wv": 310, "S_mean": 3.357253208504901e-20, "S_stat": 6.39964393538868e-24, "dS_full": 2.890025317640282e-23, "Ic_mean": 2.623e-09, "Ic_std": 5e-13, "P_mean": 50.146, "P_std": 0.037815340802379, "dlam": 0.11433}, {"wv": 330, "S_mean": 3.525710031038627e-20, "S_stat": 5.950565453229751e-24, "dS_full": 1.998569107532775e-23, "Ic_mean": 3.555e-09, "Ic_std": 6e-13, "P_mean": 60.80399999999999, "P_std": 0.02792848008753856, "dlam": 0.09442}, {"wv": 350, "S_mean": 3.581508776525028e-20, "S_stat": 5.52823846431647e-24, "dS_full": 5.188801973760845e-23, "Ic_mean": 4.535e-09, "Ic_std": 7e-13, "P_mean": 72.004, "P_std": 0.1023718711365607, "dlam": 0.08114}, {"wv": 370, "S_mean": 3.516562719879143e-20, "S_stat": 5.791228632920823e-24, "dS_full": 1.8761629850951026e-23, "Ic_mean": 5.465e-09, "Ic_std": 9e-13, "P_mean": 83.584, "P_std": 0.037815340802377695, "dlam": 0.08505}, {"wv": 390, "S_mean": 3.45366171693348e-20, "S_stat": 5.935146446010449e-24, "dS_full": 3.2848062860173564e-23, "Ic_mean": 5.819e-09, "Ic_std": 1e-12, "P_mean": 85.97200000000001, "P_std": 0.07981227975693687, "dlam": 0.04487}, {"wv": 410, "S_mean": 3.278147172884817e-20, "S_stat": 5.058001809697129e-24, "dS_full": 3.0090058442039697e-23, "Ic_mean": 5.833e-09, "Ic_std": 9e-13, "P_mean": 86.364, "P_std": 0.07569676347110484, "dlam": 0.09214}, {"wv": 430, "S_mean": 3.023474570042199e-20, "S_stat": 4.643462576375043e-24, "dS_full": 2.1870875949687123e-23, "Ic_mean": 5.209e-09, "Ic_std": 8e-13, "P_mean": 79.73200000000001, "P_std": 0.05069516742254505, "dlam": 0.13282}, {"wv": 450, "S_mean": 2.711813458264572e-20, "S_stat": 4.669278960088224e-24, "dS_full": 2.8222815467887324e-23, "Ic_mean": 5.227e-09, "Ic_std": 9e-13, "P_mean": 85.238, "P_std": 0.07949842765740475, "dlam": 0.19283}, {"wv": 470, "S_mean": 2.342856130742743e-20, "S_stat": 3.821951273642322e-24, "dS_full": 1.0197578726405203e-23, "Ic_mean": 5.517e-09, "Ic_std": 9e-13, "P_mean": 99.704, "P_std": 0.037815340802376, "dlam": 0.06477}, {"wv": 490, "S_mean": 1.978351706710708e-20, "S_stat": 4.064708525675069e-24, "dS_full": 2.4427168183302376e-23, "Ic_mean": 3.407e-09, "Ic_std": 7e-13, "P_mean": 69.94, "P_std": 0.08426149773176496, "dlam": 0.08608}, {"wv": 510, "S_mean": 1.683715324792199e-20, "S_stat": 3.412475323859341e-24, "dS_full": 1.2179846689693482e-23, "Ic_mean": 2.467e-09, "Ic_std": 5e-13, "P_mean": 57.172, "P_std": 0.03898717737923494, "dlam": 0.06687}], "A24-1110": [{"wv": 230, "S_mean": 1.943367180439803e-20, "S_stat": 4.995481474043578e-22, "dS_full": 4.998749016384373e-22, "Ic_mean": 1.5561e-10, "Ic_std": 4e-12, "P_mean": 6.9278, "P_std": 0.004658325879540838, "dlam": 0.14773}, {"wv": 250, "S_mean": 2.426939631705364e-20, "S_stat": 3.186549239391513e-22, "dS_full": 3.216864932608824e-22, "Ic_mean": 3.8081e-10, "Ic_std": 5e-12, "P_mean": 12.49, "P_std": 0.021213203435595972, "dlam": 0.16031}, {"wv": 270, "S_mean": 2.707941967654102e-20, "S_stat": 1.958468654659974e-23, "dS_full": 4.4133272904411125e-23, "Ic_mean": 8.2961e-10, "Ic_std": 6e-13, "P_mean": 22.58, "P_std": 0.03082207001484451, "dlam": 0.14025}, {"wv": 290, "S_mean": 3.081370581319887e-20, "S_stat": 1.031517792904402e-23, "dS_full": 3.127454873299496e-23, "Ic_mean": 1.49361e-09, "Ic_std": 5e-13, "P_mean": 33.262, "P_std": 0.02683281572999585, "dlam": 0.14993}, {"wv": 310, "S_mean": 3.484407146599988e-20, "S_stat": 7.622488409221143e-24, "dS_full": 7.553666729125495e-23, "Ic_mean": 2.28561e-09, "Ic_std": 5e-13, "P_mean": 42.108, "P_std": 0.08871302046486648, "dlam": 0.14311}, {"wv": 330, "S_mean": 3.650941991752632e-20, "S_stat": 7.150274333389625e-24, "dS_full": 3.581222385206536e-22, "Ic_mean": 3.06361e-09, "Ic_std": 6e-13, "P_mean": 50.402, "P_std": 0.4939838054025638, "dlam": 0.1151}, {"wv": 350, "S_mean": 3.702905658229829e-20, "S_stat": 6.6062477176908e-24, "dS_full": 1.7526741537884477e-23, "Ic_mean": 3.92361e-09, "Ic_std": 7e-13, "P_mean": 60.246, "P_std": 0.020736441353329253, "dlam": 0.09504}, {"wv": 370, "S_mean": 3.651127853233769e-20, "S_stat": 6.977255161065124e-24, "dS_full": 4.503890861784452e-23, "Ic_mean": 4.70961e-09, "Ic_std": 9e-13, "P_mean": 69.376, "P_std": 0.08264381404557777, "dlam": 0.09512}, {"wv": 390, "S_mean": 3.63036594186438e-20, "S_stat": 7.175189277166383e-24, "dS_full": 3.039290968476264e-23, "Ic_mean": 5.05961e-09, "Ic_std": 1e-12, "P_mean": 71.118, "P_std": 0.05718391382198486, "dlam": 0.04822}, {"wv": 410, "S_mean": 3.501797830501133e-20, "S_stat": 6.818659965420141e-24, "dS_full": 3.312814734458163e-23, "Ic_mean": 5.13561e-09, "Ic_std": 1e-12, "P_mean": 71.18199999999999, "P_std": 0.06220932405998564, "dlam": 0.12522}, {"wv": 430, "S_mean": 3.277082347104289e-20, "S_stat": 5.65793383060601e-24, "dS_full": 3.629226247083552e-23, "Ic_mean": 4.63361e-09, "Ic_std": 8e-13, "P_mean": 65.436, "P_std": 0.0661815684310984, "dlam": 0.17923}, {"wv": 450, "S_mean": 2.975636937762289e-20, "S_stat": 5.63851188620973e-24, "dS_full": 2.738101921746199e-23, "Ic_mean": 4.74961e-09, "Ic_std": 9e-13, "P_mean": 70.58599999999998, "P_std": 0.051283525619832245, "dlam": 0.23937}, {"wv": 470, "S_mean": 2.620479489056445e-20, "S_stat": 4.995566748302762e-24, "dS_full": 3.380792833589318e-23, "Ic_mean": 5.24561e-09, "Ic_std": 1e-12, "P_mean": 84.756, "P_std": 0.09736529155710677, "dlam": 0.26103}, {"wv": 490, "S_mean": 2.200679453098652e-20, "S_stat": 5.35834612896516e-24, "dS_full": 2.3547310883104717e-23, "Ic_mean": 3.28561e-09, "Ic_std": 8e-13, "P_mean": 60.63399999999999, "P_std": 0.06228964600958899, "dlam": 0.08524}, {"wv": 510, "S_mean": 1.865931798484411e-20, "S_stat": 3.685267080009185e-24, "dS_full": 2.1920536854320992e-23, "Ic_mean": 2.53161e-09, "Ic_std": 5e-13, "P_mean": 52.94, "P_std": 0.060827625302982656, "dlam": 0.07375}], "D24-1199": [{"wv": 230, "S_mean": 2.155563400077138e-20, "S_stat": 5.203532649552535e-22, "dS_full": 5.291258755441618e-22, "Ic_mean": 1.657e-10, "Ic_std": 4e-12, "P_mean": 6.647, "P_std": 0.02924893160441934, "dlam": 0.15456}, {"wv": 250, "S_mean": 2.742598607888631e-20, "S_stat": 3.693735498839907e-22, "dS_full": 3.743302755890052e-22, "Ic_mean": 4.455e-10, "Ic_std": 6e-12, "P_mean": 12.93, "P_std": 0.02738612787525821, "dlam": 0.16101}, {"wv": 270, "S_mean": 3.190351507530165e-20, "S_stat": 2.085391778196952e-23, "dS_full": 6.520460176430444e-23, "Ic_mean": 1.0709e-09, "Ic_std": 7e-13, "P_mean": 24.76, "P_std": 0.04636809247747848, "dlam": 0.13306}, {"wv": 290, "S_mean": 3.583033380163966e-20, "S_stat": 1.061691949280646e-23, "dS_full": 5.549917220679358e-23, "Ic_mean": 2.0249e-09, "Ic_std": 6e-13, "P_mean": 38.77999999999999, "P_std": 0.055677643628300626, "dlam": 0.14503}, {"wv": 310, "S_mean": 4.026891502715563e-20, "S_stat": 7.78669922211266e-24, "dS_full": 2.301385547055262e-23, "Ic_mean": 3.1029e-09, "Ic_std": 6e-13, "P_mean": 49.464, "P_std": 0.01516575088810008, "dlam": 0.13697}, {"wv": 330, "S_mean": 4.158763104523703e-20, "S_stat": 7.112644269751502e-24, "dS_full": 2.0717759490251347e-23, "Ic_mean": 4.0929e-09, "Ic_std": 7e-13, "P_mean": 59.348, "P_std": 0.01923538406167214, "dlam": 0.11136}, {"wv": 350, "S_mean": 4.184117416386709e-20, "S_stat": 6.435989796207132e-24, "dS_full": 3.0738283681668806e-23, "Ic_mean": 5.2009e-09, "Ic_std": 8e-13, "P_mean": 70.674, "P_std": 0.04722287581247152, "dlam": 0.09232}, {"wv": 370, "S_mean": 4.061857194362396e-20, "S_stat": 7.240504486863562e-24, "dS_full": 2.066856912460738e-23, "Ic_mean": 6.1709e-09, "Ic_std": 1.1e-12, "P_mean": 81.71000000000001, "P_std": 0.033166247903549544, "dlam": 0.09242}, {"wv": 390, "S_mean": 3.973946212829442e-20, "S_stat": 7.252939900827891e-24, "dS_full": 9.103049924152167e-23, "Ic_mean": 6.574900000000001e-09, "Ic_std": 1.2e-12, "P_mean": 84.502, "P_std": 0.1926655132606793, "dlam": 0.0485}, {"wv": 410, "S_mean": 3.787546029055451e-20, "S_stat": 6.935944749449161e-24, "dS_full": 3.759571757217765e-23, "Ic_mean": 6.5529e-09, "Ic_std": 1.2e-12, "P_mean": 83.982, "P_std": 0.07823042886242976, "dlam": 0.11885}, {"wv": 430, "S_mean": 3.506898268363551e-20, "S_stat": 5.319840957250578e-24, "dS_full": 2.3196572822261333e-23, "Ic_mean": 5.9329e-09, "Ic_std": 9e-13, "P_mean": 78.29400000000001, "P_std": 0.03974921382869818, "dlam": 0.17025}, {"wv": 450, "S_mean": 3.147100044141758e-20, "S_stat": 4.705826712069618e-24, "dS_full": 2.896785577733113e-23, "Ic_mean": 6.0189e-09, "Ic_std": 9e-13, "P_mean": 84.576, "P_std": 0.0638748776906859, "dlam": 0.22702}, {"wv": 470, "S_mean": 2.720794080875112e-20, "S_stat": 4.288159121302324e-24, "dS_full": 3.0131739282704354e-23, "Ic_mean": 6.3449e-09, "Ic_std": 1e-12, "P_mean": 98.74, "P_std": 0.09486832980505348, "dlam": 0.24804}, {"wv": 490, "S_mean": 2.346863224292604e-20, "S_stat": 4.643920402270854e-24, "dS_full": 1.8051264259805004e-23, "Ic_mean": 4.0429e-09, "Ic_std": 8e-13, "P_mean": 69.96199999999999, "P_std": 0.05069516742254323, "dlam": 0.08111}, {"wv": 510, "S_mean": 2.042508714405403e-20, "S_stat": 3.430596785927313e-24, "dS_full": 2.2442375479749474e-23, "Ic_mean": 2.9769e-09, "Ic_std": 5e-13, "P_mean": 56.85, "P_std": 0.06123724356957858, "dlam": 0.06988}], "F24-1247": [{"wv": 230, "S_mean": 2.045589033741864e-20, "S_stat": 4.855997706212138e-22, "dS_full": 4.8613367824000405e-22, "Ic_mean": 1.685e-10, "Ic_std": 4e-12, "P_mean": 7.127, "P_std": 0.0060415229867971714, "dlam": 0.16606}, {"wv": 250, "S_mean": 2.65394924172083e-20, "S_stat": 3.079541937480656e-22, "dS_full": 3.231597798346748e-22, "Ic_mean": 4.309e-10, "Ic_std": 5e-12, "P_mean": 12.904, "P_std": 0.04669047011971495, "dlam": 0.18245}, {"wv": 270, "S_mean": 3.077844056242011e-20, "S_stat": 2.198235730404457e-23, "dS_full": 4.5036148982103734e-23, "Ic_mean": 9.801e-10, "Ic_std": 7e-13, "P_mean": 23.47, "P_std": 0.02645751311064602, "dlam": 0.16204}, {"wv": 290, "S_mean": 3.484221094863623e-20, "S_stat": 9.960039720037797e-24, "dS_full": 5.713363982206756e-23, "Ic_mean": 1.7491e-09, "Ic_std": 5e-13, "P_mean": 34.448, "P_std": 0.0521536192416226, "dlam": 0.16277}, {"wv": 310, "S_mean": 3.96698201853034e-20, "S_stat": 7.420190076185589e-24, "dS_full": 4.0848205951316167e-23, "Ic_mean": 2.6731e-09, "Ic_std": 5e-13, "P_mean": 43.25599999999999, "P_std": 0.038470768123340764, "dlam": 0.15006}, {"wv": 330, "S_mean": 4.125326963630027e-20, "S_stat": 7.005734845257751e-24, "dS_full": 4.723277854783876e-23, "Ic_mean": 3.5331e-09, "Ic_std": 6e-13, "P_mean": 51.646, "P_std": 0.05504543577809285, "dlam": 0.12613}, {"wv": 350, "S_mean": 4.165116279069768e-20, "S_stat": 6.454542505919367e-24, "dS_full": 5.1829962384724756e-23, "Ic_mean": 4.5171e-09, "Ic_std": 7e-13, "P_mean": 61.662, "P_std": 0.07395944834840386, "dlam": 0.10254}, {"wv": 370, "S_mean": 4.084257749584766e-20, "S_stat": 6.825930761965959e-24, "dS_full": 7.129141483485059e-23, "Ic_mean": 5.3851e-09, "Ic_std": 9e-13, "P_mean": 70.91399999999999, "P_std": 0.121778487426968, "dlam": 0.09781}, {"wv": 390, "S_mean": 4.037792844551944e-20, "S_stat": 7.018464557459357e-24, "dS_full": 4.814891600934514e-23, "Ic_mean": 5.7531e-09, "Ic_std": 1e-12, "P_mean": 72.702, "P_std": 0.08526429498916961, "dlam": 0.04979}, {"wv": 410, "S_mean": 3.857186333091811e-20, "S_stat": 6.589988780461312e-24, "dS_full": 7.349973578843049e-23, "Ic_mean": 5.8531e-09, "Ic_std": 1e-12, "P_mean": 73.656, "P_std": 0.1372224471433179, "dlam": 0.1484}, {"wv": 430, "S_mean": 3.597491074297608e-20, "S_stat": 5.45373947705764e-24, "dS_full": 2.6344573949656635e-22, "Ic_mean": 5.2771e-09, "Ic_std": 8e-13, "P_mean": 68.084, "P_std": 0.497473617390912, "dlam": 0.19946}, {"wv": 450, "S_mean": 3.265050785695261e-20, "S_stat": 5.420570930485944e-24, "dS_full": 3.951563635677622e-23, "Ic_mean": 5.4211e-09, "Ic_std": 9e-13, "P_mean": 73.424, "P_std": 0.07861297602813364, "dlam": 0.24268}, {"wv": 470, "S_mean": 2.817338362089747e-20, "S_stat": 4.797020929474633e-24, "dS_full": 4.5726880762726555e-23, "Ic_mean": 5.8731e-09, "Ic_std": 1e-12, "P_mean": 88.26400000000001, "P_std": 0.1353883303686141, "dlam": 0.23615}, {"wv": 490, "S_mean": 2.428887812541721e-20, "S_stat": 4.942917376900555e-24, "dS_full": 5.232164332018009e-23, "Ic_mean": 3.9311e-09, "Ic_std": 8e-13, "P_mean": 65.65, "P_std": 0.1401784576887628, "dlam": 0.09758}, {"wv": 510, "S_mean": 2.134421958546215e-20, "S_stat": 3.479544127263889e-24, "dS_full": 3.936542045226729e-23, "Ic_mean": 3.0671e-09, "Ic_std": 5e-13, "P_mean": 56.07000000000001, "P_std": 0.1012422836565821, "dlam": 0.17263}]};
+
+const PMT_COLORS = {
+  'F23-586': '#58a6ff', 'F23-619': '#ff7b72', 'B24-1117': '#3fb950',
+  'B24-1155': '#d2a8ff', 'E24-1227': '#ffa657', 'G24-1121': '#79c0ff',
+  'G24-1199': '#f78166', 'A24-1108': '#56d364', 'A24-1110': '#e3b341',
+  'D24-1199': '#ff6e96', 'F24-1247': '#a5d6ff'
+};
+
+const PMTS = Object.keys(RAW);
+const Y_LABELS = {
+  S_mean:  'S(C)',
+  Ic_mean: 'I_cathode (nA)',
+  P_mean:  'P_PD (nW)',
+  dS_full: 'δS Full',
+  S_stat:  'S(C) Stat Unc'
+};
+const Y_ERR = { S_mean: 'dS_full', Ic_mean: 'Ic_std', P_mean: 'P_std', dS_full: null, S_stat: null };
+
+let selected = new Set(PMTS);
+let currentView = 'line';
+
+// ── PMT buttons ────────────────────────────────────────────────────────
+function buildPMTGrid() {
+  const grid = document.getElementById('pmtGrid');
+  PMTS.forEach(pmt => {
+    const btn = document.createElement('button');
+    btn.className = 'pmt-btn active';
+    btn.textContent = pmt;
+    btn.style.color = PMT_COLORS[pmt];
+    btn.style.borderColor = PMT_COLORS[pmt] + '44';
+    btn.dataset.pmt = pmt;
+    btn.onclick = () => togglePMT(pmt, btn);
+    grid.appendChild(btn);
+  });
+}
+
+function togglePMT(pmt, btn) {
+  if (selected.has(pmt)) {
+    selected.delete(pmt);
+    btn.classList.remove('active');
+  } else {
+    selected.add(pmt);
+    btn.classList.add('active');
+  }
+  render();
+}
+
+function selectAll()  { PMTS.forEach(p => selected.add(p)); document.querySelectorAll('.pmt-btn').forEach(b => b.classList.add('active')); render(); }
+function selectNone() { selected.clear(); document.querySelectorAll('.pmt-btn').forEach(b => b.classList.remove('active')); render(); }
+
+// ── Controls ───────────────────────────────────────────────────────────
+document.querySelectorAll('input[name="yaxis"]').forEach(r => r.addEventListener('change', render));
+document.getElementById('errY').addEventListener('change', render);
+document.getElementById('errX').addEventListener('change', render);
+
+function getYKey() { return document.querySelector('input[name="yaxis"]:checked').value; }
+function getErrY() { return document.getElementById('errY').checked; }
+function getErrX() { return document.getElementById('errX').checked; }
+
+function setView(v) {
+  currentView = v;
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', ['line','heatmap'][i] === v));
+  render();
+}
+
+// ── Stats bar ──────────────────────────────────────────────────────────
+function updateStats() {
+  const yKey = getYKey();
+  const bar = document.getElementById('statsBar');
+  if (selected.size === 0) { bar.innerHTML = ''; return; }
+
+  let bestPMT = '', bestVal = -Infinity;
+  selected.forEach(pmt => {
+    const pts = RAW[pmt];
+    const maxV = Math.max(...pts.map(d => d[yKey]));
+    if (maxV > bestVal) { bestVal = maxV; bestPMT = pmt; }
+  });
+
+  bar.innerHTML = `
+    <div class="stat-chip">PMTs shown: <span>${selected.size}</span></div>
+    <div class="stat-chip">Metric: <span>${Y_LABELS[yKey]}</span></div>
+    <div class="stat-chip">Peak PMT: <span style="color:${PMT_COLORS[bestPMT]}">${bestPMT}</span></div>
+  `;
+}
+
+// ── Line chart (Plotly) ────────────────────────────────────────────────
+function buildLineChart(divId) {
+  const yKey  = getYKey();
+  const showErrY = getErrY();
+  const showErrX = getErrX();
+  const errYKey  = Y_ERR[yKey];
+
+  const traces = [];
+  selected.forEach(pmt => {
+    const pts = RAW[pmt];
+    const color = PMT_COLORS[pmt];
+    const xs  = pts.map(d => d.wv);
+    const ys  = pts.map(d => d[yKey]);
+    const eys = errYKey ? pts.map(d => d[errYKey]) : null;
+    const exs = pts.map(d => d.dlam);
+
+    traces.push({
+      x: xs, y: ys,
+      name: pmt,
+      mode: 'lines+markers',
+      type: 'scatter',
+      line:   { color, width: 1.5 },
+      marker: { color, size: 3 },
+      error_y: showErrY && eys ? {
+        type: 'data', array: eys, visible: true,
+        color: color, thickness: 1.2, width: 3
+      } : { visible: false },
+      error_x: showErrX ? {
+        type: 'data', array: exs, visible: true,
+        color: color, thickness: 1.2, width: 3
+      } : { visible: false },
+      hovertemplate: `<b>${pmt}</b><br>λ = %{x} nm<br>${Y_LABELS[yKey]} = %{y:.3e}<extra></extra>`
+    });
+  });
+
+  const layout = {
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor:  'rgba(0,0,0,0)',
+    font: { color: '#8b949e', family: 'JetBrains Mono, monospace', size: 11 },
+    xaxis: {
+      title: { text: 'Wavelength λ (nm)', font: { size: 12, color: '#8b949e' } },
+      tickmode: 'array',
+      tickvals: [230,250,270,290,310,330,350,370,390,410,430,450,470,490,510],
+      gridcolor: '#21262d', zerolinecolor: '#21262d',
+      color: '#8b949e'
+    },
+    yaxis: {
+      title: { text: Y_LABELS[yKey], font: { size: 12, color: '#8b949e' } },
+      tickformat: '.2e',
+      gridcolor: '#21262d', zerolinecolor: '#21262d',
+      color: '#8b949e'
+    },
+    legend: { font: { size: 10 }, bgcolor: 'rgba(0,0,0,0)', x: 0.01, y: 0.99 },
+    margin: { l: 70, r: 20, t: 20, b: 60 },
+    hovermode: 'closest'
+  };
+
+  Plotly.newPlot(divId, traces, layout, { responsive: true, displayModeBar: false });
+}
+
+// ── Heatmap ────────────────────────────────────────────────────────────
+function buildHeatmap(containerId) {
+  const yKey = getYKey();
+  const container = document.getElementById(containerId);
+
+  const activePMTs = PMTS.filter(p => selected.has(p));
+  if (activePMTs.length === 0) { container.innerHTML = '<p style="color:var(--muted);padding:20px">No PMTs selected.</p>'; return; }
+
+  // Collect all wavelengths
+  const wvSet = new Set();
+  activePMTs.forEach(p => RAW[p].forEach(d => wvSet.add(d.wv)));
+  const wvs = [...wvSet].sort((a,b)=>a-b);
+
+  // Build value matrix
+  const matrix = {};
+  activePMTs.forEach(p => {
+    matrix[p] = {};
+    RAW[p].forEach(d => { matrix[p][d.wv] = d[yKey]; });
+  });
+
+  // Global min/max for color scale
+  let gMin = Infinity, gMax = -Infinity;
+  activePMTs.forEach(p => wvs.forEach(w => {
+    const v = matrix[p][w];
+    if (v !== undefined) { gMin = Math.min(gMin, v); gMax = Math.max(gMax, v); }
+  }));
+
+  function getColor(v) {
+    if (v === undefined) return '#1f2937';
+    const t = (v - gMin) / (gMax - gMin);
+    // Deep navy → bright blue → cyan
+    const r = Math.round(13 + t * (0 - 13));
+    const g = Math.round(17 + t * (200 - 17));
+    const b = Math.round(23 + t * (255 - 23));
+    return `rgb(${r},${g},${b})`;
+  }
+
+  function textColor(v) {
+    if (v === undefined) return '#4b5563';
+    const t = (v - gMin) / (gMax - gMin);
+    return t > 0.55 ? '#000' : '#e6edf3';
+  }
+
+  let html = `<div class="heatmap-wrapper"><table class="heatmap-table"><thead><tr>
+    <th>PMT \\ λ (nm)</th>`;
+  wvs.forEach(w => { html += `<th>${w}</th>`; });
+  html += `</tr></thead><tbody>`;
+
+  activePMTs.forEach(p => {
+    html += `<tr><th style="text-align:left;color:${PMT_COLORS[p]}">${p}</th>`;
+    wvs.forEach(w => {
+      const v = matrix[p][w];
+      const bg = getColor(v);
+      const tc = textColor(v);
+      const label = v !== undefined ? v.toExponential(1) : '—';
+      html += `<td style="background:${bg};color:${tc}" title="${p} @ ${w}nm = ${v !== undefined ? v.toExponential(3) : 'N/A'}">${label}</td>`;
+    });
+    html += `</tr>`;
+  });
+
+  html += `</tbody></table></div>
+  <div class="heatmap-scale">
+    <span>${gMin.toExponential(1)}</span>
+    <div class="scale-bar"></div>
+    <span>${gMax.toExponential(1)}</span>
+    <span style="margin-left:8px">${Y_LABELS[yKey]}</span>
+  </div>`;
+
+  container.innerHTML = html;
+}
+
+// ── Legend ─────────────────────────────────────────────────────────────
+function buildLegend(containerId) {
+  const container = document.getElementById(containerId);
+  let html = '<div class="legend-bar">';
+  PMTS.filter(p => selected.has(p)).forEach(p => {
+    html += `<div class="legend-item"><div class="legend-dot" style="background:${PMT_COLORS[p]}"></div><span style="color:${PMT_COLORS[p]}">${p}</span></div>`;
+  });
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+// ── Main render ────────────────────────────────────────────────────────
+function render() {
+  updateStats();
+
+  const cc = document.getElementById('chartsContainer');
+  cc.innerHTML = '';
+  cc.className = 'charts-container';
+
+  if (currentView === 'line') {
+    cc.classList.add('single');
+    cc.innerHTML = `
+      <div class="chart-card">
+        <h3>${Y_LABELS[getYKey()]} vs λ</h3>
+        <div id="lineDiv" class="plotly-wrapper"></div>
+      </div>`;
+    buildLineChart('lineDiv');
+
+  } else {
+    cc.classList.add('single');
+    cc.innerHTML = `
+      <div class="chart-card">
+        <h3>Heatmap — ${Y_LABELS[getYKey()]}</h3>
+        <div id="heatmapBody"></div>
+      </div>`;
+    buildHeatmap('heatmapBody');
+  }
+}
+
+buildPMTGrid();
+render();
+</script>
+</body>
+</html>
