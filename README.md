@@ -5,10 +5,8 @@
 - Signal: PMT cathode current (I_cathode)
 - Spectral response: S(C) = 1.99e-7 × I_cathode / (P_PD × λ)
 - 5 repeated measurements per wavelength
-## Files
-- `spectrometer_fwhm.py` — Avasoft ASCII file analysis: peak λ, FWHM, Δλ
-- `results_summary.xlsx` — S(C) and I_cathode summary for all PMTs
-- `spectra_summary.png` — FWHM and Δλ plots
+
+
 ## How to Run
 ```bash
 python spectrometer_fwhm.py --folder /path/to/txt/files --out results/
@@ -36,6 +34,3 @@ df.to_excel('results/results_summary.xlsx', index=False)
 from google.colab import files
 files.download('results/results_summary.xlsx')
 
-    f.write(readme)
-
-!cd PMT-Photodiode-Calibrated && git add README.md && git commit -m "add README" && git push
