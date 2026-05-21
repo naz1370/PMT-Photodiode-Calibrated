@@ -1,4 +1,4 @@
-# MOLLER PMT Photodiode-Calibrated Spectral Characterization
+# MOLLER-PMT-Photodiode-Calibration
 ## Method
 - Light source: monochromator (230–510 nm, 20 nm steps)
 - Reference: photodiode (PD) power measurement
